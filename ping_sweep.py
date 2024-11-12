@@ -13,8 +13,10 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 def random_payload(size):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=size)).encode()
 
-def ping_sweep(network, min_delay, max_delay, timeout, size, timestamp):
-    ip_list = ip_network(network, strict=False).hosts()
+def ping_sweep(network, min_delay, max_delay, timeout, size, timestamp, verbose):
+    ip_list = list(ip_network(network, strict=False).hosts())
+    random.shuffle(ip_list)
+    
     print(f"Starting ping sweep on network: {network}")
 
     for ip in ip_list:
@@ -23,7 +25,9 @@ def ping_sweep(network, min_delay, max_delay, timeout, size, timestamp):
         response = sr1(packet, timeout=timeout, verbose=0)
 
         if response:
-            print(f"Host {ip} is up")
+            print(f"[+] Host {ip} is up")
+        elif verbose:
+            print(f"[-] Host {ip} is down")
 
         time.sleep(random.uniform(min_delay, max_delay)) 
 
@@ -35,6 +39,7 @@ def main():
     parser.add_argument("-t", "--timeout", default=0.3, help="Timeout in seconds (default 0.3)")
     parser.add_argument("-s", "--size", default=60, help="Size of the payload (default 60)")
     parser.add_argument("-ts", "--timestamp", action="store_true", help="Use ICMP timestamp type")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Activate verbose mode")
 
     args = parser.parse_args()
 
@@ -45,7 +50,8 @@ def main():
             float(args.max_delay), 
             float(args.timeout), 
             int(args.size),
-            args.timestamp
+            args.timestamp,
+            args.verbose
             )
     except ValueError as e:
         print(f"Invalid network address: {e}")
